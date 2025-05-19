@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\GrievanceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -77,17 +78,17 @@ Route::middleware('auth')->group(function () {
 
 // User routes
 Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
-
+    Route::get('/dashboard', [\App\Http\Controllers\GrievanceController::class, 'index'])->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    Route::get('/grievances', [GrievanceController::class, 'index'])->name('grievances.index');
+    Route::post('/grievances', [GrievanceController::class, 'store'])->name('grievances.store');
+    Route::delete('/grievances/{grievance_id}', [\App\Http\Controllers\GrievanceController::class, 'destroy'])->name('grievances.destroy');
 });
 
 // Admin routes
-Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('admin/dashboard');
     })->name('admin.dashboard');
@@ -95,6 +96,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/users', function () {
         return Inertia::render('admin/users');
     })->name('admin.users');
+
+    Route::get('/grievances', [GrievanceController::class, 'adminIndex'])->name('admin.grievances.index');
 });
 
 require __DIR__.'/settings.php';

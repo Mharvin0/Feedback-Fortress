@@ -10,7 +10,7 @@ export default function AdminDashboard() {
             <div className="container py-6">
                 <h1 className="mb-8 text-3xl font-bold">Admin Dashboard</h1>
                 <div className="rounded-lg border p-8">
-                    <p className="text-muted-foreground">Welcome to the admin dashboard. This page is currently under construction.</p>
+                    <p className="text-muted-foreground">.</p>
                 </div>
             </div>
         </>

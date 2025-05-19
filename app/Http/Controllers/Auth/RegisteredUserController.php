@@ -4,24 +4,33 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Providers\RouteServiceProvider;
+use App\Services\CaptchaService;
 use Illuminate\Auth\Events\Registered;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Validation\ValidationException;
 
 class RegisteredUserController extends Controller
 {
+    protected $captchaService;
+
+    public function __construct(CaptchaService $captchaService)
+    {
+        $this->captchaService = $captchaService;
+    }
+
     /**
      * Display the registration view.
      */
-    public function create(): Response
+    public function create()
     {
-        return Inertia::render('auth/register');
+        $captcha = $this->captchaService->generateCaptcha();
+        return Inertia::render('auth/register', [
+            'captcha' => $captcha
+        ]);
     }
 
     /**
@@ -29,24 +38,31 @@ class RegisteredUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
+        if (!$this->captchaService->validateCaptcha($request->captcha)) {
+            throw ValidationException::withMessages([
+                'captcha' => 'Invalid CAPTCHA. Please try again.',
+            ]);
+        }
+
         $request->validate([
-            'student_id' => ['required', 'string', 'max:255', 'unique:users,student_id', 'regex:/^[0-9-]+$/'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'student_id' => ['required', 'string', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'captcha' => ['required', 'string'],
         ]);
 
         $user = User::create([
-            'name' => $request->student_id,
             'student_id' => $request->student_id,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'user',
         ]);
 
         event(new Registered($user));
 
-        return redirect()->route('login')->with('status', 'Registration successful! Please login to continue.');
+        Auth::login($user);
+
+        return redirect()->route('verification.notice');
     }
 }
