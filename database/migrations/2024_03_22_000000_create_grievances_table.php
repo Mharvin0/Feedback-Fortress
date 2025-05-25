@@ -13,9 +13,10 @@ return new class extends Migration
             $table->string('grievance_id')->unique(); // Unique ID for each grievance
             $table->string('subject');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->enum('type', ['request', 'complaint', 'feedback']);
+            $table->enum('type', ['complaint', 'feedback']);
             $table->text('details');
-            $table->enum('status', ['pending', 'in_progress', 'resolved'])->default('pending');
+            $table->enum('status', ['under_review', 'solved', 'unsolved'])->default('under_review');
+            $table->json('attachments')->nullable();
             $table->timestamps();
         });
     }

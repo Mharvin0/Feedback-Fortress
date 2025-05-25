@@ -13,6 +13,7 @@ interface RegisterForm {
     password: string;
     password_confirmation: string;
     captcha: string;
+    alias: string;
     [key: string]: string;
 }
 
@@ -23,6 +24,7 @@ export default function Register({ captcha }: { captcha: string }) {
         password: '',
         password_confirmation: '',
         captcha: '',
+        alias: '',
     });
 
     const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,6 +32,11 @@ export default function Register({ captcha }: { captcha: string }) {
         if (name === 'student_id') {
             // Only allow numbers and hyphens
             if (/^[0-9-]*$/.test(value)) {
+                setData(name, value);
+            }
+        } else if (name === 'alias') {
+            // Only allow alphabets and ensure first letter is uppercase
+            if (/^[A-Z][a-zA-Z]*$/.test(value) || value === '') {
                 setData(name, value);
             }
         } else {
@@ -40,7 +47,7 @@ export default function Register({ captcha }: { captcha: string }) {
     const submit = (e: FormEvent) => {
         e.preventDefault();
         post(route('register'), {
-            onSuccess: () => reset('password', 'password_confirmation'),
+            onFinish: () => reset('password', 'password_confirmation'),
         });
     };
 
@@ -81,6 +88,23 @@ export default function Register({ captcha }: { captcha: string }) {
                                     placeholder="Enter your email"
                                 />
                                 {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="alias">Alias</Label>
+                                <Input
+                                    id="alias"
+                                    type="text"
+                                    name="alias"
+                                    value={data.alias}
+                                    onChange={handleRegisterChange}
+                                    required
+                                    placeholder="Enter your alias (e.g., John)"
+                                    pattern="[A-Z][a-zA-Z]*"
+                                    title="Alias must start with an uppercase letter and contain only alphabets"
+                                />
+                                {errors.alias && <p className="text-sm text-red-500">{errors.alias}</p>}
+                                <p className="text-xs text-gray-500">Must start with an uppercase letter and contain only alphabets</p>
                             </div>
 
                             <div className="space-y-2">

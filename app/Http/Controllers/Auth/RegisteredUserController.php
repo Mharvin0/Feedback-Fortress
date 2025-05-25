@@ -47,15 +47,25 @@ class RegisteredUserController extends Controller
         }
 
         $request->validate([
-            'student_id' => ['required', 'string', 'max:255', 'unique:users'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'student_id' => 'required|string|max:255|unique:'.User::class,
+            'alias' => [
+                'required',
+                'string',
+                'max:255',
+                'unique:'.User::class,
+                'regex:/^[A-Z][a-zA-Z]*$/',
+            ],
             'captcha' => ['required', 'string'],
         ]);
 
         $user = User::create([
+            'name' => $request->name,
             'student_id' => $request->student_id,
             'email' => $request->email,
+            'alias' => Hash::make($request->alias),
             'password' => Hash::make($request->password),
         ]);
 
