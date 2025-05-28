@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->enum('type', ['complaint', 'feedback']);
             $table->text('details');
-            $table->enum('status', ['under_review', 'solved', 'unsolved'])->default('under_review');
+            $table->enum('status', ['under_review', 'resolved', 'archived'])->default('under_review');
             $table->json('attachments')->nullable();
             $table->timestamps();
         });

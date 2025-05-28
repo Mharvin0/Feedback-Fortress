@@ -34,8 +34,8 @@ class GrievanceController extends Controller
                     'details' => $grievance->details,
                     'status' => match($grievance->status) {
                         'under_review' => 'Under Review',
-                        'solved' => 'Solved',
-                        'unsolved' => 'Unsolved',
+                        'resolved' => 'Resolved',
+                        'archived' => 'Archived',
                         default => ucfirst($grievance->status)
                     },
                     'created_at' => $grievance->created_at->format('d/m/Y H:i'),
@@ -89,30 +89,70 @@ class GrievanceController extends Controller
             'type' => $validated['type'],
             'details' => $validated['details'],
             'attachments' => $attachmentPath ? [$attachmentPath] : [],
+            'status' => 'pending',
         ]);
 
         return redirect()->back()->with('success', 'Grievance submitted successfully.');
     }
 
-    public function adminIndex()
+    public function adminIndex(Request $request)
     {
-        $grievances = Grievance::with('user')
-            ->latest()
-            ->get()
-            ->map(function ($grievance) {
+        if ($request->wantsJson()) {
+            $query = Grievance::with('user')
+                ->when($request->category, function ($q) use ($request) {
+                    return $q->where('type', $request->category);
+                })
+                ->when($request->status, function ($q) use ($request) {
+                    return $q->where('status', $request->status);
+                })
+                ->when($request->search, function ($q) use ($request) {
+                    return $q->where(function ($query) use ($request) {
+                        $query->where('subject', 'like', "%{$request->search}%")
+                            ->orWhere('grievance_id', 'like', "%{$request->search}%");
+                    });
+                })
+                ->latest();
+
+            $grievances = $query->get()->map(function ($grievance) {
                 return [
+                    'id' => $grievance->id,
                     'grievance_id' => $grievance->grievance_id,
-                    'student_id' => $grievance->user->student_id,
-                    'type' => $grievance->type,
-                    'details' => $grievance->details,
+                    'category' => $grievance->type,
                     'status' => $grievance->status,
+                    'subject' => $grievance->subject,
+                    'message' => $grievance->details,
                     'created_at' => $grievance->created_at->format('Y-m-d H:i:s'),
+                    'attachment_path' => !empty($grievance->attachments) ? $grievance->attachments[0] : null,
                 ];
             });
 
-        return Inertia::render('Admin/Grievances/Index', [
-            'grievances' => $grievances
+            return response()->json($grievances);
+        }
+
+        return Inertia::render('admin/dashboard');
+    }
+
+    public function update(Request $request, $id)
+    {
+        $grievance = Grievance::findOrFail($id);
+        
+        $request->validate([
+            'status' => 'required|in:pending,under_review,archived'
         ]);
+
+        $grievance->update([
+            'status' => $request->status
+        ]);
+
+        return response()->json(['message' => 'Status updated successfully']);
+    }
+
+    public function archive($id)
+    {
+        $grievance = Grievance::findOrFail($id);
+        $grievance->update(['status' => 'archived']);
+        
+        return response()->json(['message' => 'Grievance archived successfully']);
     }
 
     public function userSubmissions()
@@ -185,8 +225,8 @@ class GrievanceController extends Controller
                     'details' => $grievance->details,
                     'status' => match($grievance->status) {
                         'under_review' => 'Under Review',
-                        'solved' => 'Solved',
-                        'unsolved' => 'Unsolved',
+                        'resolved' => 'Resolved',
+                        'archived' => 'Archived',
                         default => ucfirst($grievance->status)
                     },
                     'created_at' => $grievance->created_at->format('d/m/Y H:i'),

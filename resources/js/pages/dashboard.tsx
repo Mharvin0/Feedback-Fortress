@@ -113,8 +113,8 @@ export default function Dashboard() {
 
     // Live counts for statuses
     const underReviewCount = grievances.filter((g: any) => g.status === 'Under Review').length;
-    const solvedCount = grievances.filter((g: any) => g.status === 'Solved').length;
-    const unsolvedCount = grievances.filter((g: any) => g.status === 'Unsolved').length;
+    const resolvedCount = grievances.filter((g: any) => g.status === 'Resolved').length;
+    const archivedCount = grievances.filter((g: any) => g.status === 'Archived').length;
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -344,8 +344,8 @@ export default function Dashboard() {
                                         {[
                                             { title: 'Total Case', count: total_submissions, icon: Ticket, color: 'text-[#3A4F24]', delay: 1.0 },
                                             { title: 'Under Review', count: underReviewCount, icon: Bell, color: 'text-yellow-400', delay: 1.1 },
-                                            { title: 'Solved', count: solvedCount, icon: CheckCircle, color: 'text-green-700', delay: 1.2 },
-                                            { title: 'Unsolved', count: unsolvedCount, icon: XCircle, color: 'text-red-700', delay: 1.3 }
+                                            { title: 'Resolved', count: resolvedCount, icon: CheckCircle, color: 'text-green-700', delay: 1.2 },
+                                            { title: 'Archived', count: archivedCount, icon: XCircle, color: 'text-red-700', delay: 1.3 }
                                         ].map((stat, index) => (
                                             <motion.div
                                                 key={stat.title}
@@ -550,7 +550,7 @@ export default function Dashboard() {
                                                                     <td className="px-6 py-4 capitalize text-lg">{g.type}</td>
                                                                     <td className="px-6 py-4 max-w-2xl truncate text-lg" title={g.details}>{g.details.length > 60 ? g.details.slice(0, 60) + '...' : g.details}</td>
                                                                     <td className="px-6 py-4">
-                                                                        <span className={`inline-block px-3 py-1 rounded text-base font-semibold ${g.status === 'Under Review' ? 'bg-yellow-100 text-yellow-400' : g.status === 'Solved' ? 'bg-green-100 text-green-800' : g.status === 'Unsolved' ? 'bg-orange-100 text-orange-400' : 'bg-gray-100 text-gray-800'}`}>{g.status}</span>
+                                                                        <span className={`inline-block px-3 py-1 rounded text-base font-semibold ${g.status === 'Under Review' ? 'bg-yellow-100 text-yellow-400' : g.status === 'Resolved' ? 'bg-green-100 text-green-800' : g.status === 'Archived' ? 'bg-orange-100 text-orange-400' : 'bg-gray-100 text-gray-800'}`}>{g.status}</span>
                                                                     </td>
                                                                     <td className="px-6 py-4 text-base text-gray-500">{g.created_at}</td>
                                                                     <td className="px-6 py-4 flex gap-2 items-center">
@@ -630,8 +630,8 @@ export default function Dashboard() {
                                                                     <span className="font-semibold min-w-[120px]">Status:</span>
                                                                     <span className={`inline-block px-3 py-1 rounded text-base font-semibold ${
                                                                         viewModal.grievance.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' : 
-                                                                        viewModal.grievance.status === 'Solved' ? 'bg-green-100 text-green-800' : 
-                                                                        viewModal.grievance.status === 'Unsolved' ? 'bg-orange-100 text-orange-800' : 
+                                                                        viewModal.grievance.status === 'Resolved' ? 'bg-green-100 text-green-800' : 
+                                                                        viewModal.grievance.status === 'Archived' ? 'bg-orange-100 text-orange-800' : 
                                                                         'bg-gray-100 text-gray-800'
                                                                     }`}>{viewModal.grievance.status}</span>
                                                                 </motion.div>

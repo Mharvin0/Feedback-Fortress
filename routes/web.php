@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GrievanceController;
 use App\Http\Controllers\InboxMessageController;
+use App\Http\Controllers\AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -104,7 +105,12 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     })->name('admin.users');
 
     Route::get('/grievances', [GrievanceController::class, 'adminIndex'])->name('admin.grievances.index');
+    Route::put('/grievances/{id}', [GrievanceController::class, 'update'])->name('admin.grievances.update');
+    Route::put('/grievances/{id}/archive', [GrievanceController::class, 'archive'])->name('admin.grievances.archive');
+    Route::get('/dashboard/stats', [AdminDashboardController::class, 'getStats'])->name('admin.dashboard.stats');
+    Route::get('/analytics', [\App\Http\Controllers\AdminDashboardController::class, 'getAnalytics'])->name('admin.analytics');
 });
+
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

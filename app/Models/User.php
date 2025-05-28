@@ -55,4 +55,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return str_starts_with($this->student_id, 'ADMIN');
     }
+
+    public function grievances()
+    {
+        return $this->hasMany(\App\Models\Grievance::class);
+    }
 }
