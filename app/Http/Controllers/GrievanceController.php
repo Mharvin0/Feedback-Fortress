@@ -137,12 +137,17 @@ class GrievanceController extends Controller
         $grievance = Grievance::findOrFail($id);
         
         $request->validate([
-            'status' => 'required|in:pending,under_review,archived'
+            'status' => 'required|in:pending,under_review,resolved,archived',
+            'resolution_message' => 'required_if:status,resolved|string|nullable'
         ]);
 
-        $grievance->update([
-            'status' => $request->status
-        ]);
+        if ($request->status === 'resolved') {
+            $grievance->markAsResolved($request->resolution_message);
+        } else {
+            $grievance->update([
+                'status' => $request->status
+            ]);
+        }
 
         return response()->json(['message' => 'Status updated successfully']);
     }

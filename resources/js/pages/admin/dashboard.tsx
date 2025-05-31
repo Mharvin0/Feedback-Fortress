@@ -21,8 +21,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Grievance {
     id: number;
@@ -106,7 +108,10 @@ export default function AdminDashboard() {
 
     const [analytics, setAnalytics] = useState<Analytics | null>(null);
 
+    const [resolutionModal, setResolutionModal] = useState<{ open: boolean; grievanceId: number | null; message: string }>({ open: false, grievanceId: null, message: '' });
+
     useEffect(() => {
+        console.log('Initial activeTab:', activeTab);
         fetchDashboardData();
         fetchGrievances();
         if (activeTab === 'analytics') {
@@ -116,6 +121,10 @@ export default function AdminDashboard() {
             });
         }
     }, [filters, activeTab]);
+
+    useEffect(() => {
+        console.log('activeTab changed to:', activeTab);
+    }, [activeTab]);
 
     const fetchDashboardData = async () => {
         try {
@@ -137,7 +146,9 @@ export default function AdminDashboard() {
                 category: filters.category === 'all' ? '' : filters.category,
                 status: filters.status === 'all' ? '' : filters.status
             };
+            console.log('Fetching grievances with params:', params);
             const response = await axios.get(route('admin.grievances.index'), { params });
+            console.log('Grievances response:', response.data);
             if (Array.isArray(response.data)) {
                 setGrievances(response.data);
             } else {
@@ -162,9 +173,17 @@ export default function AdminDashboard() {
     };
 
     const handleStatusChange = async (id: number, status: string) => {
+        console.log('handleStatusChange called with:', { id, status });
         try {
             setIsLoading(true);
+            if (status === 'resolved') {
+                console.log('Opening resolution modal for grievance:', id);
+                setResolutionModal({ open: true, grievanceId: id, message: '' });
+                return;
+            }
+            
             const response = await axios.put(route('admin.grievances.update', { id }), { status });
+            console.log('Status update response:', response.data);
             if (response.data.message) {
                 setGrievances(prevGrievances =>
                     prevGrievances.map(grievance =>
@@ -176,6 +195,38 @@ export default function AdminDashboard() {
         } catch (error) {
             console.error('Error updating grievance status:', error);
             toast.error('Failed to update status');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleResolve = async () => {
+        if (!resolutionModal.message.trim()) {
+            toast.error('Please provide a resolution message');
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            const response = await axios.put(route('admin.grievances.update', { id: resolutionModal.grievanceId }), {
+                status: 'resolved',
+                resolution_message: resolutionModal.message
+            });
+            
+            if (response.data.message) {
+                setGrievances(prevGrievances =>
+                    prevGrievances.map(grievance =>
+                        grievance.id === resolutionModal.grievanceId 
+                            ? { ...grievance, status: 'resolved' } 
+                            : grievance
+                    )
+                );
+                toast.success('Grievance resolved successfully');
+                setResolutionModal({ open: false, grievanceId: null, message: '' });
+            }
+        } catch (error) {
+            console.error('Error resolving grievance:', error);
+            toast.error('Failed to resolve grievance');
         } finally {
             setIsLoading(false);
         }
@@ -381,6 +432,7 @@ export default function AdminDashboard() {
                     </>
                 );
             case 'grievances':
+                console.log('Rendering Grievance Management tab');
                 return (
                     <Card className="mb-8 bg-white">
                         <CardHeader>
@@ -404,11 +456,8 @@ export default function AdminDashboard() {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="all">All Categories</SelectItem>
-                                            <SelectItem value="academic">Academic</SelectItem>
-                                            <SelectItem value="administrative">Administrative</SelectItem>
-                                            <SelectItem value="financial">Financial</SelectItem>
-                                            <SelectItem value="facilities">Facilities</SelectItem>
-                                            <SelectItem value="other">Other</SelectItem>
+                                            <SelectItem value="complaint">Complaint</SelectItem>
+                                            <SelectItem value="feedback">Feedback</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <Select
@@ -432,78 +481,112 @@ export default function AdminDashboard() {
                                     <div className="flex justify-center items-center h-32">
                                         <Loader2 className="h-8 w-8 animate-spin text-[#3A4F24]" />
                                     </div>
-                                ) : grievances.filter(g => g.status !== 'archived').length === 0 ? (
+                                ) : grievances.length === 0 ? (
                                     <div className="text-center py-8 text-gray-500">
                                         No grievances found
                                     </div>
                                 ) : (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="text-black">ID</TableHead>
-                                                <TableHead className="text-black">Category</TableHead>
-                                                <TableHead className="text-black">Status</TableHead>
-                                                <TableHead className="text-black">Subject</TableHead>
-                                                <TableHead className="text-black">Date Submitted</TableHead>
-                                                <TableHead className="text-black">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {grievances.filter(g => g.status !== 'archived').map((grievance) => (
-                                                <TableRow key={grievance.id}>
-                                                    <TableCell className="text-black">{grievance.grievance_id}</TableCell>
-                                                    <TableCell className="capitalize text-black">{grievance.category}</TableCell>
-                                                    <TableCell className="text-black">
-                                                        <Select
-                                                            value={grievance.status}
-                                                            onValueChange={(value) => handleStatusChange(grievance.id, value)}
-                                                        >
-                                                            <SelectTrigger className="w-[140px] bg-[#3A4F24] text-white border-[#3A4F24] hover:bg-[#2c3a18]">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="pending">Pending</SelectItem>
-                                                                <SelectItem value="under_review">Under Review</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </TableCell>
-                                                    <TableCell className="text-black">{grievance.subject}</TableCell>
-                                                    <TableCell className="text-black">{new Date(grievance.created_at).toLocaleDateString()}</TableCell>
-                                                    <TableCell className="text-black">
-                                                        <div className="flex gap-2">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => {
-                                                                    setSelectedGrievance(grievance);
-                                                                    setIsModalOpen(true);
-                                                                }}
-                                                            >
-                                                                <Eye className="h-4 w-4" />
-                                                            </Button>
-                                                            {grievance.attachment_path && (
+                                    <div className="bg-white rounded-lg shadow">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="text-black">ID</TableHead>
+                                                    <TableHead className="text-black">Category</TableHead>
+                                                    <TableHead className="text-black">Status</TableHead>
+                                                    <TableHead className="text-black">Subject</TableHead>
+                                                    <TableHead className="text-black">Created At</TableHead>
+                                                    <TableHead className="text-black">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {grievances.filter(g => g.status !== 'resolved' && g.status !== 'archived').map((grievance) => {
+                                                    console.log('Rendering grievance:', grievance.id, 'Status:', grievance.status);
+                                                    return (
+                                                    <TableRow key={grievance.id} className="text-black">
+                                                        <TableCell className="text-black">{grievance.grievance_id}</TableCell>
+                                                        <TableCell className="capitalize text-black">{grievance.category}</TableCell>
+                                                        <TableCell>
+                                                            {grievance.status !== 'resolved' && grievance.status !== 'archived' ? (
+                                                                <Select
+                                                                    value={grievance.status}
+                                                                    onValueChange={(value) => handleStatusChange(grievance.id, value)}
+                                                                >
+                                                                    <SelectTrigger className="w-[140px] text-black capitalize bg-transparent border-none shadow-none">
+                                                                        <SelectValue placeholder="Change Status" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="pending">Pending</SelectItem>
+                                                                        <SelectItem value="under_review">Under Review</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            ) : (
+                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                                    grievance.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                                                                    grievance.status === 'archived' ? 'bg-gray-100 text-gray-800' :
+                                                                    grievance.status === 'under_review' ? 'bg-orange-400 text-orange-800' :
+                                                                    'bg-yellow-400 text-yellow-800'
+                                                                }`}>
+                                                                    {grievance.status.replace('_', ' ').toUpperCase()}
+                                                                </span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-black">{grievance.subject}</TableCell>
+                                                        <TableCell className="text-black">{new Date(grievance.created_at).toLocaleDateString()}</TableCell>
+                                                        <TableCell>
+                                                            <div className="flex gap-2">
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    onClick={() => handleDownload(grievance.id)}
+                                                                    onClick={() => {
+                                                                        setSelectedGrievance(grievance);
+                                                                        setIsModalOpen(true);
+                                                                    }}
+                                                                    title="View Details"
+                                                                    className="text-black"
                                                                 >
-                                                                    <Download className="h-4 w-4" />
+                                                                    <Eye className="h-4 w-4" />
                                                                 </Button>
-                                                            )}
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => handleArchive(grievance.id)}
-                                                                title="Archive"
-                                                            >
-                                                                <ArchiveIcon className="h-4 w-4 text-gray-700" />
-                                                            </Button>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                                                {grievance.attachment_path && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() => handleDownload(grievance.id)}
+                                                                        title="Download Attachment"
+                                                                        className="text-black"
+                                                                    >
+                                                                        <Download className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
+                                                                {grievance.status !== 'resolved' && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() => handleStatusChange(grievance.id, 'resolved')}
+                                                                        title="Resolve Grievance"
+                                                                        className="text-black"
+                                                                    >
+                                                                        <CheckCircle className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
+                                                                {grievance.status !== 'archived' && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() => handleArchive(grievance.id)}
+                                                                        title="Archive Grievance"
+                                                                        className="text-black"
+                                                                    >
+                                                                        <ArchiveIcon className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
                                 )}
                             </div>
                         </CardContent>
@@ -927,6 +1010,43 @@ export default function AdminDashboard() {
                             )}
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Resolution Modal */}
+            <Dialog open={resolutionModal.open} onOpenChange={(open) => !open && setResolutionModal({ open: false, grievanceId: null, message: '' })}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Resolve Grievance</DialogTitle>
+                        <DialogDescription>
+                            Please provide a resolution message for this grievance.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label htmlFor="resolution-message">Resolution Message</Label>
+                        <Textarea
+                            id="resolution-message"
+                            value={resolutionModal.message}
+                            onChange={(e) => setResolutionModal(prev => ({ ...prev, message: e.target.value }))}
+                            placeholder="Enter the resolution message..."
+                            className="mt-2"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setResolutionModal({ open: false, grievanceId: null, message: '' })}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleResolve}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Resolve
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

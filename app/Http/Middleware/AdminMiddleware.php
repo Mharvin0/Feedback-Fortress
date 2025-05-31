@@ -5,6 +5,8 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AdminMiddleware
 {
@@ -15,7 +17,8 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user() || !$request->user()->isAdmin()) {
+        if (!Auth::guard('admin')->check()) {
+            Log::info('Admin check failed: User not authenticated as admin');
             abort(403, 'Unauthorized action.');
         }
 

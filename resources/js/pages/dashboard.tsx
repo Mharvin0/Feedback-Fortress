@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function Dashboard() {
     const { student_id, total_submissions, grievances = [], captcha: initialCaptcha, user } = usePage().props as any;
     const [showForm, setShowForm] = useState(false);
-    const [activeTab, setActiveTab] = useState<'submit' | 'submissions' | 'deleted' | 'inbox' | 'help' | 'profile'>('submit');
+    const [activeTab, setActiveTab] = useState<'submit' | 'submissions' | 'deleted' | 'help' | 'profile'>('submit');
     const { data, setData, post, processing, errors, reset, delete: destroy } = useForm({
         subject: '',
         type: '',
@@ -253,19 +253,6 @@ export default function Dashboard() {
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             transition={{ delay: 0.65, duration: 0.5 }}
-                        >
-                        <Button
-                            variant="ghost"
-                            className={`w-full justify-start text-base h-14 px-6 font-semibold border-2 transition-colors duration-150 ${activeTab === 'inbox' ? 'bg-[#3A4F24] text-white border-[#3A4F24]' : 'bg-white text-[#3A4F24] border-transparent'} hover:bg-[#3A4F24] hover:text-white focus:bg-[#3A4F24] focus:text-white focus:border-[#3A4F24]`}
-                            onClick={() => setActiveTab('inbox')}
-                        >
-                            <Mail className="mr-2 h-5 w-5" /> Inbox
-                        </Button>
-                        </motion.div>
-                        <motion.div
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: 0.8, duration: 0.5 }}
                         >
                         <Button
                             variant="ghost"
@@ -750,48 +737,6 @@ export default function Dashboard() {
                                                                 </tr>
                                                             ))
                                                         )}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </motion.div>
-                            )}
-                            {/* Inbox Tab Content */}
-                            {activeTab === 'inbox' && (
-                                <motion.div key="inbox-content" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="w-full max-w-4xl mx-auto mt-8">
-                                    <Card className="bg-white w-full">
-                                        <CardHeader className="pb-0">
-                                            <div className="flex gap-6 justify-start w-full border-b border-gray-200 pt-2">
-                                                <button className="text-[#3A4F24] font-semibold border-b-2 border-[#3A4F24] pb-2">All messages</button>
-                                                <button className="text-gray-400 font-semibold border-b-2 border-transparent pb-2">Pinned</button>
-                                                <button className="text-gray-400 font-semibold border-b-2 border-transparent pb-2">Unread</button>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="overflow-x-auto">
-                                                <table className="min-w-full w-full divide-y divide-gray-200 text-base text-black">
-                                                    <thead className="bg-[#F3F4F6] text-black">
-                                                        <tr>
-                                                            <th className="px-6 py-4 text-left">
-                                                                <input type="checkbox" disabled className="w-5 h-5 text-[#3A4F24] border-gray-300 rounded" />
-                                                            </th>
-                                                            <th className="px-6 py-4 text-left text-sm font-bold text-black uppercase tracking-wider">From</th>
-                                                            <th className="px-6 py-4 text-left text-sm font-bold text-black uppercase tracking-wider">Subject</th>
-                                                            <th className="px-6 py-4 text-left text-sm font-bold text-black uppercase tracking-wider">Date</th>
-                                                            <th className="px-6 py-4"></th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="bg-white divide-y divide-gray-200 text-lg text-black">
-                                                        <tr>
-                                                            <td colSpan={5} className="text-center text-gray-400 py-12 text-xl">
-                                                                <div className="flex flex-col items-center justify-center">
-                                                                    <Mail className="w-10 h-10 text-gray-300 mb-3" />
-                                                                    <div className="font-semibold text-lg text-gray-500 mb-1">No messages yet</div>
-                                                                    <div className="text-gray-400 text-base">Your inbox is empty. Messages from the admin will appear here.</div>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
                                                     </tbody>
                                                 </table>
                                             </div>

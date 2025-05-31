@@ -20,10 +20,13 @@ class Grievance extends Model
         'details',
         'status',
         'attachments',
+        'resolution_message',
+        'resolved_at'
     ];
 
     protected $casts = [
         'attachments' => 'array',
+        'resolved_at' => 'datetime'
     ];
 
     protected static function boot()
@@ -70,5 +73,16 @@ class Grievance extends Model
         } catch (\Exception $e) {
             return $value;
         }
+    }
+
+    public function markAsResolved(string $resolutionMessage): void
+    {
+        $this->status = 'resolved';
+        $this->resolution_message = $resolutionMessage;
+        $this->resolved_at = now();
+        $this->save();
+
+        // Notify the user that their grievance has been resolved
+        // $this->user->notify(new GrievanceResolved($this, $resolutionMessage));
     }
 } 

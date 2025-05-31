@@ -95,7 +95,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Admin routes
-Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
+Route::middleware(['web', 'auth:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('admin/dashboard');
     })->name('admin.dashboard');
@@ -111,6 +111,37 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::get('/analytics', [\App\Http\Controllers\AdminDashboardController::class, 'getAnalytics'])->name('admin.analytics');
 });
 
+// Test email configuration (remove in production)
+Route::get('/test-email', function () {
+    $user = \App\Models\User::first();
+    if ($user) {
+        $grievance = \App\Models\Grievance::first();
+        if ($grievance) {
+            $user->notify(new \App\Notifications\GrievanceResolved(
+                $grievance,
+                'This is a test resolution message'
+            ));
+            return 'Test email sent to ' . $user->email;
+        }
+        return 'No grievances found';
+    }
+    return 'No users found';
+})->middleware(['web', 'auth:admin']);
+
+// Debug route - REMOVE THIS IN PRODUCTION
+Route::get('/debug-admin', function () {
+    $user = \App\Models\User::where('student_id', 'ADMIN')->first();
+    if ($user) {
+        return response()->json([
+            'exists' => true,
+            'id' => $user->id,
+            'email' => $user->email,
+            'student_id' => $user->student_id,
+            'is_admin' => $user->isAdmin()
+        ]);
+    }
+    return response()->json(['exists' => false]);
+})->middleware(['web', 'auth']);
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

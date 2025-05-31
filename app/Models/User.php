@@ -53,7 +53,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function isAdmin(): bool
     {
-        return str_starts_with($this->student_id, 'ADMIN');
+        return $this->student_id === 'ADMIN';
     }
 
     public function grievances()
