@@ -2,6 +2,12 @@
 
 
 **Project Manager**: Angel Cadimas
+
+
 **Front End**: Mharvin Caramat & Adonis Alcantara
+
+
 **Back End**: Mharvin Caramat
+
+
 **Document Writer**: Mary Joy Dao
