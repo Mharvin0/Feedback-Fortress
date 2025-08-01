@@ -42,19 +42,13 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        // Check if the login input is a student ID (contains only numbers and hyphens)
-        $isStudentId = preg_match('/^[0-9-]+$/', $this->input('login'));
-
         $credentials = [
             'password' => $this->input('password'),
         ];
 
-        if ($isStudentId) {
-            $credentials['name'] = $this->input('login'); // Use name field for student ID
-        } else {
-            $credentials['email'] = $this->input('login');
-        }
-
+        // Try to authenticate with email
+        $credentials['email'] = $this->input('login');
+        
         if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
