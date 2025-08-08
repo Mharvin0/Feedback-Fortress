@@ -10,6 +10,9 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\GrievanceController;
+use App\Http\Controllers\InboxMessageController;
+use App\Http\Controllers\AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -77,17 +80,32 @@ Route::middleware('auth')->group(function () {
 
 // User routes
 Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
-
+    Route::get('/dashboard', [\App\Http\Controllers\GrievanceController::class, 'index'])->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    Route::get('/grievances', [GrievanceController::class, 'index'])->name('grievances.index');
+    Route::post('/grievances', [GrievanceController::class, 'store'])->name('grievances.store');
+    Route::delete('/grievances/{grievance_id}', [\App\Http\Controllers\GrievanceController::class, 'destroy'])->name('grievances.destroy');
+    Route::get('/grievance-attachment/{grievance_id}', [\App\Http\Controllers\GrievanceController::class, 'downloadAttachment'])->name('grievance.attachment.download');
+    Route::get('/grievances/deleted', [\App\Http\Controllers\GrievanceController::class, 'deleted'])->name('grievances.deleted');
+    Route::delete('/grievances/force-delete/{grievance_id}', [\App\Http\Controllers\GrievanceController::class, 'forceDelete'])->name('grievances.forceDelete');
+    Route::put('/grievances/restore/{grievance_id}', [\App\Http\Controllers\GrievanceController::class, 'restore'])->name('grievances.restore');
+    Route::get('/inbox-messages', [\App\Http\Controllers\InboxMessageController::class, 'index'])->name('inbox.messages');
+    
+    // Notification routes
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/mark-as-read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+        Route::post('/mark-all-as-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+        Route::delete('/delete', [App\Http\Controllers\NotificationController::class, 'delete'])->name('notifications.delete');
+        Route::delete('/clear-all', [App\Http\Controllers\NotificationController::class, 'clearAll'])->name('notifications.clearAll');
+        Route::post('/create', [App\Http\Controllers\NotificationController::class, 'create'])->name('notifications.create');
+    });
 });
 
 // Admin routes
-Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+Route::middleware(['web', 'auth:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('admin/dashboard');
     })->name('admin.dashboard');
@@ -95,7 +113,45 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/users', function () {
         return Inertia::render('admin/users');
     })->name('admin.users');
+
+    Route::get('/grievances', [GrievanceController::class, 'adminIndex'])->name('admin.grievances.index');
+    Route::put('/grievances/{id}', [GrievanceController::class, 'update'])->name('admin.grievances.update');
+    Route::put('/grievances/{id}/archive', [GrievanceController::class, 'archive'])->name('admin.grievances.archive');
+    Route::get('/dashboard/stats', [AdminDashboardController::class, 'getStats'])->name('admin.dashboard.stats');
+    Route::get('/analytics', [\App\Http\Controllers\AdminDashboardController::class, 'getAnalytics'])->name('admin.analytics');
 });
+
+// Test email configuration (remove in production)
+Route::get('/test-email', function () {
+    $user = \App\Models\User::first();
+    if ($user) {
+        $grievance = \App\Models\Grievance::first();
+        if ($grievance) {
+            $user->notify(new \App\Notifications\GrievanceResolved(
+                $grievance,
+                'This is a test resolution message'
+            ));
+            return 'Test email sent to ' . $user->email;
+        }
+        return 'No grievances found';
+    }
+    return 'No users found';
+})->middleware(['web', 'auth:admin']);
+
+// Debug route - REMOVE THIS IN PRODUCTION
+Route::get('/debug-admin', function () {
+    $user = \App\Models\User::where('student_id', 'ADMIN')->first();
+    if ($user) {
+        return response()->json([
+            'exists' => true,
+            'id' => $user->id,
+            'email' => $user->email,
+            'student_id' => $user->student_id,
+            'is_admin' => $user->isAdmin()
+        ]);
+    }
+    return response()->json(['exists' => false]);
+})->middleware(['web', 'auth']);
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
