@@ -31,6 +31,7 @@ class GrievanceController extends Controller
                     'grievance_id' => $grievance->grievance_id,
                     'subject' => $grievance->subject,
                     'type' => $grievance->type,
+                    'priority' => $grievance->priority,
                     'details' => $grievance->details,
                     'status' => match($grievance->status) {
                         'under_review' => 'Under Review',
@@ -60,36 +61,57 @@ class GrievanceController extends Controller
     {
         $validated = $request->validate([
             'subject' => 'required|string|min:8|max:255',
-            'type' => 'required|in:complaint,feedback',
+            'type' => 'required|in:complaint,feedback,suggestion,inquiry',
+            'priority' => 'required|in:low,normal,high,urgent',
             'details' => 'required|string|min:10',
-            'attachment' => 'required|file|mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx,txt|max:5120',
+            'attachments' => 'required|array|min:1',
+            'attachments.*' => 'file|mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx,txt|max:5120',
         ], [
             'subject.required' => 'Subject is required.',
             'type.required' => 'Type is required.',
+            'priority.required' => 'Priority is required.',
             'details.required' => 'Details are required.',
-            'attachment.required' => 'Attachment is required.',
-            'attachment.file' => 'Attachment must be a valid file.',
-            'attachment.mimes' => 'Attachment must be an image or document.',
-            'attachment.max' => 'Attachment must not exceed 5MB.',
+            'attachments.required' => 'At least one attachment is required.',
+            'attachments.array' => 'Attachments must be files.',
+            'attachments.min' => 'At least one attachment is required.',
+            'attachments.*.file' => 'Each attachment must be a valid file.',
+            'attachments.*.mimes' => 'Each attachment must be an image or document.',
+            'attachments.*.max' => 'Each attachment must not exceed 5MB.',
         ]);
 
-        $attachmentPath = null;
-        if ($request->hasFile('attachment')) {
-            $file = $request->file('attachment');
-            $originalName = $file->getClientOriginalName();
-            $encryptedContents = Crypt::encrypt(file_get_contents($file->getRealPath()));
-            $encryptedFileName = uniqid() . '_' . $originalName . '.enc';
-            Storage::disk('public')->put('grievance_attachments/' . $encryptedFileName, $encryptedContents);
-            $attachmentPath = 'grievance_attachments/' . $encryptedFileName;
+        $attachmentPaths = [];
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $originalName = $file->getClientOriginalName();
+                $encryptedContents = Crypt::encrypt(file_get_contents($file->getRealPath()));
+                $encryptedFileName = uniqid() . '_' . $originalName . '.enc';
+                Storage::disk('public')->put('grievance_attachments/' . $encryptedFileName, $encryptedContents);
+                $attachmentPaths[] = 'grievance_attachments/' . $encryptedFileName;
+            }
         }
 
-        Grievance::create([
+        $grievance = Grievance::create([
             'user_id' => auth()->id(),
             'subject' => $validated['subject'],
             'type' => $validated['type'],
+            'priority' => $validated['priority'],
             'details' => $validated['details'],
-            'attachments' => $attachmentPath ? [$attachmentPath] : [],
+            'attachments' => $attachmentPaths,
             'status' => 'pending',
+        ]);
+
+        // Create notification for the user
+        $user = auth()->user();
+        \App\Models\Notification::create([
+            'user_id' => $user->id,
+            'type' => 'success',
+            'title' => 'Grievance Submitted',
+            'message' => "Your grievance '{$grievance->subject}' has been submitted successfully.",
+            'category' => 'grievance',
+            'data' => [
+                'grievance_id' => $grievance->grievance_id,
+                'priority' => $grievance->priority
+            ]
         ]);
 
         return redirect()->back()->with('success', 'Grievance submitted successfully.');

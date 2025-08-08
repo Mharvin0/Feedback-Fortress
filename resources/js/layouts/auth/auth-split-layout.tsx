@@ -12,8 +12,20 @@ export default function AuthSplitLayout({ children, title, description }: AuthSp
     return (
         <div className="min-h-screen flex">
             {/* Left side - Branding */}
-            <div className="hidden lg:flex lg:w-1/2 bg-primary flex-col items-center justify-center p-12">
-                <div className="flex flex-col items-center gap-4">
+            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col items-center justify-center p-12">
+                {/* Background Image with Blur */}
+                <div 
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    style={{
+                        backgroundImage: 'url(/bg_3.jpg)',
+                        filter: 'blur(3px)',
+                        transform: 'scale(1.1)'
+                    }}
+                />
+                {/* Overlay for better text readability */}
+                <div className="absolute inset-0 bg-primary/70" />
+                
+                <div className="flex flex-col items-center gap-4 relative z-10">
                     <img src={logo} alt="Feedback Fortress" className="w-32 h-32 object-contain" />
                     <h1 className="text-4xl font-bold text-primary-foreground">Feedback Fortress</h1>
                     <p className="text-primary-foreground/80 text-center max-w-md">

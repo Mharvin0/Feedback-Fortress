@@ -92,6 +92,16 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/grievances/force-delete/{grievance_id}', [\App\Http\Controllers\GrievanceController::class, 'forceDelete'])->name('grievances.forceDelete');
     Route::put('/grievances/restore/{grievance_id}', [\App\Http\Controllers\GrievanceController::class, 'restore'])->name('grievances.restore');
     Route::get('/inbox-messages', [\App\Http\Controllers\InboxMessageController::class, 'index'])->name('inbox.messages');
+    
+    // Notification routes
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/mark-as-read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+        Route::post('/mark-all-as-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+        Route::delete('/delete', [App\Http\Controllers\NotificationController::class, 'delete'])->name('notifications.delete');
+        Route::delete('/clear-all', [App\Http\Controllers\NotificationController::class, 'clearAll'])->name('notifications.clearAll');
+        Route::post('/create', [App\Http\Controllers\NotificationController::class, 'create'])->name('notifications.create');
+    });
 });
 
 // Admin routes

@@ -17,11 +17,13 @@ class Grievance extends Model
         'user_id',
         'subject',
         'type',
+        'priority',
         'details',
         'status',
         'attachments',
         'resolution_message',
-        'resolved_at'
+        'resolved_at',
+        'draft_saved_at'
     ];
 
     protected $casts = [
